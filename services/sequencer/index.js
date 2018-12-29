@@ -47,7 +47,12 @@ function getNextSequence (uuid) {
     return sequencer.generatorObj.next();
 }
 
+function getSequences () {
+    return sequences;
+}
+
 module.exports = {
     createNewSequence,
-    getNextSequence
+    getNextSequence,
+    getSequences
 };
