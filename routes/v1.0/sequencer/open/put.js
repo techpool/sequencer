@@ -5,15 +5,13 @@ const sequencer = require('../../../../controller/v1.0/sequencer');
 
 const router = express.Router();
 
-router.post('/', async (req, res, next) => {
-    const { sequencerType, pipeLineType, sequenceArgs } = req.body;
+router.put('/:uuid', async (req, res, next) => {
+    const { uuid } = req.params;
     try {
-        const sequencerData = sequencer.create.initializeSequence(sequencerType, pipeLineType, sequenceArgs || []);
+        const sequenceData = sequencer.update.getNextSequence(uuid);
         res.json({
             'status': 'SUCCESS',
-            'data': {
-                ...sequencerData
-            }
+            'data': sequenceData
         });
         return;
     } catch (e) {
