@@ -1,88 +1,180 @@
+// function fibonacciSeq () {
+//     if (this.counter < 1) {
+//         return 0;
+//     }
+//
+//     if (this.counter <= 2) {
+//         return 1;
+//     }
+//
+//     console.log('F: ', this.previousValue);
+//     console.log('F: ', this.currentValue);
+//     console.log('F: ', this.counter);
+//
+//     return this.previousValue + this.currentValue;
+// }
+
 function fibonacciSeq () {
-    if (this.counter < 1) {
-        return 0;
+    let counter = 0;
+    let previousValue = 0;
+    let currentValue = 0;
+
+    let pipeline;
+    if (this.pipe) {
+        pipeline = this.pipe();
     }
 
-    if (this.counter <= 2) {
-        return 1;
-    }
+    return () => {
+        let temp;
+        if (counter < 1) {
+            temp = 0;
+        } else if (counter <= 2) {
+            temp = 1;
+        } else {
+            temp = previousValue + currentValue;
+        }
 
-    return this.previousValue + this.currentValue;
+        previousValue = currentValue;
+        currentValue = temp;
+        counter++;
+
+        if (pipeline) {
+            return pipeline(currentValue);
+        } else {
+            return currentValue;
+        }
+    };
 }
 
 function factorialSeq () {
-    if (this.counter === 0 || this.counter === 1) {
-        return 1;
+    let counter = 0;
+    let currentValue = 0;
+
+    let pipeline;
+    if (this.pipe) {
+        pipeline = this.pipe();
     }
 
-    return this.counter * this.currentValue;
+    return () => {
+        let temp;
+        if (counter === 0 || counter === 1) {
+            temp = 1;
+        } else {
+            temp = counter * currentValue;
+        }
+
+        currentValue = temp;
+        counter++;
+
+        if (pipeline) {
+            return pipeline(currentValue);
+        } else {
+            return currentValue;
+        }
+    };
 }
 
 function rangeSeq (start, step) {
-    const n = this.counter;
-    return (step * n) + start;
+    let counter = 0;
+
+    let pipeline;
+    if (this.pipe) {
+        pipeline = this.pipe();
+    }
+    return () => {
+        const currentValue = (step * counter++) + start;
+        if (pipeline) {
+            return pipeline(currentValue);
+        } else {
+            return currentValue;
+        }
+    };
 }
 
 function primeSeq () {
-    if (this.counter === 0) {
-        return 2;
+    let counter = 0;
+    let currentValue = 0;
+
+    let pipeline;
+    if (this.pipe) {
+        pipeline = this.pipe();
     }
 
-    let number = this.currentValue + 1;
-    while (true) {
-        let primeFound = true;
+    return () => {
+        let temp;
+        if (counter === 0) {
+            temp = 2;
+        } else {
+            let number = currentValue + 1;
+            while (true) {
+                let primeFound = true;
 
-        if (number % 2 === 0) {
-            primeFound = false;
-        }
+                if (number % 2 === 0) {
+                    primeFound = false;
+                }
 
-        const limit = Math.round(number / 2);
-        for (let i = 2; i < limit; i++) {
-            if (number % i === 0) {
-                primeFound = false;
-                break;
+                const limit = Math.round(number / 2);
+                for (let i = 2; i < limit; i++) {
+                    if (number % i === 0) {
+                        primeFound = false;
+                        break;
+                    }
+                }
+
+                if (primeFound) {
+                    break;
+                }
+                number++;
             }
+            temp = number;
         }
 
-        if (primeFound) {
-            break;
-        }
-        number++;
-    }
+        counter++;
+        currentValue = temp;
 
-    return number;
+        if (pipeline) {
+            return pipeline(currentValue);
+        } else {
+            return currentValue;
+        }
+    };
 }
 
 function partialSumSeq (...args) {
-    args.length = this.counter + 1;
-    return args.reduce((a, b) => a + b, 0);
+    let counter = 0;
+
+    let pipeline;
+    if (this.pipe) {
+        pipeline = this.pipe();
+    }
+
+    return () => {
+        if (args.length === counter) {
+            throw new Error('Out of sequence');
+        }
+
+        const currentValue = args.reduce((a, b, c) => {
+            if (c > counter) {
+                return a;
+            }
+            return a + b;
+        }, 0);
+
+        counter++;
+        if (pipeline) {
+            return pipeline(currentValue);
+        } else {
+            return currentValue;
+        }
+    };
 }
 
 function generator (sequencer, ...args) {
-    this.currentValue = 0;
-    this.previousValue = 0;
-    this.counter = 0;
+    const seq = sequencer.apply(this, [...args]);
 
-    let acc;
-    if (this.pipe) {
-        acc = this.pipe();
-    }
     return {
         next: () => {
-            const temp = sequencer.apply(this, [...args]);
-            this.previousValue = this.currentValue;
-            this.currentValue = temp;
-            this.counter++;
-
-            if (this.previousValue === this.currentValue) {
-                throw new Error('Sequencer out of range');
-            }
-
-            if (acc) {
-                return acc(this.currentValue);
-            } else {
-                return this.currentValue;
-            }
+            return seq();
         }
     };
 }
@@ -110,23 +202,66 @@ function isEven () {
     };
 }
 
+function piper (pipe, func) {
+    const seq = func();
+    return () => {
+        return pipe()(seq());
+    };
+}
+
+// function piper (...fs) {
+//     return () => {
+//         return fs.reduce((args, f) => [f.apply(this, args)], [])[0];
+//     };
+// }
+
+// const compose = (...fns) => x => fns.reduceRight((v, f) => f(v), x);
+
 function pipeSeq (sequencer, ...args) {
     return {
-        pipeline: (pipe) => {
+        pipeline: function (pipe) {
             this.pipe = pipe;
-            return {
-                invoke: () => {
-                    return sequencer.bind(this, ...args);
-                }
-            };
+            return this;
+        },
+        invoke: function () {
+            return sequencer.bind(this, ...args);
         }
     };
 }
 
-const pipedSeq = pipeSeq(rangeSeq, 2, 3) // 2, 5, 8, 11
+// const seq = generator(fibonacciSeq);
+// const generatorObj = generator.call({
+//     currentValue: 0,
+//     previousValue: 0,
+//     counter: 0
+// }, fibonacciSeq, 1, 3, 4, 5);
+
+// console.log(seq.next());
+// console.log(seq.next());
+// console.log(seq.next());
+// console.log(seq.next());
+
+// console.log(generatorObj.next());
+// console.log(generatorObj.next());
+
+const pipedSeq = pipeSeq(partialSumSeq, 2, 3, 3, 4) // 2, 5, 8, 11
     .pipeline(isEven) // 2, 7(5+2), 15(7+8), 26(15+11)
     .invoke();
 
-const seq = generator(pipedSeq);
+const pipedSeq2 = pipeSeq(factorialSeq, 1, 2) // 2, 5, 8, 11
+    .pipeline(isEven) // 2, 7(5+2), 15(7+8), 26(15+11)
+    .invoke();
 
-const generatorObj = generator(partialSumSeq, 1, 2, 4, 5);
+const seq2 = generator(pipedSeq);
+const seq3 = generator(pipedSeq2);
+
+console.log(seq2.next());
+console.log(seq2.next());
+console.log(seq2.next());
+console.log(seq2.next());
+console.log(seq2.next());
+console.log(seq2.next());
+//
+console.log(seq3.next());
+console.log(seq3.next());
+console.log(seq3.next());

@@ -40,17 +40,17 @@ function createNewSequence (sequenceType, pipeLineType, sequenceArgs) {
     let generatorObj;
     switch (pipeLineType) {
         case 'ACCUMULATOR':
-            generatorObj = generator(pipeSeq(sequencer, ...sequenceArgs) // 2, 5, 8, 11
-                .pipeline(accumulator) // 2, 7(5+2), 15(7+8), 26(15+11)
+            generatorObj = generator(pipeSeq(sequencer, sequenceArgs)
+                .pipeline(accumulator)
                 .invoke());
             break;
         case 'IS_EVEN':
-            generatorObj = generator(pipeSeq(sequencer, ...sequenceArgs) // 2, 5, 8, 11
-                .pipeline(isEven) // 2, 7(5+2), 15(7+8), 26(15+11)
+            generatorObj = generator(pipeSeq.apply(this, [sequencer, ...sequenceArgs])
+                .pipeline(isEven)
                 .invoke());
             break;
         default:
-            generatorObj = generator(sequencer, ...sequenceArgs);
+            generatorObj = generator(sequencer, sequenceArgs);
     }
 
     const newSequencer = {
