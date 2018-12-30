@@ -18,7 +18,7 @@ router.put('/:uuid', async (req, res, next) => {
         console.log(e);
         res.status(500).json({
             'status': 'ERROR',
-            'data': e
+            'data': e.message
         });
     }
 });

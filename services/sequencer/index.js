@@ -1,5 +1,10 @@
 const generator = require('../../lib/generator');
+const pipeSeq = require('../../lib/pipeSeq');
 const uuidUtil = require('../../utils/uuid');
+const {
+    accumulator,
+    isEven
+} = require('../../lib/pipelines');
 const {
     factorialSeq,
     fibonacciSeq,
@@ -10,7 +15,7 @@ const {
 
 const sequences = [];
 
-function createNewSequence (sequenceType, pipelineType, sequenceArgs) {
+function createNewSequence (sequenceType, pipeLineType, sequenceArgs) {
     const newUuid = uuidUtil.generateUuid();
     let sequencer;
     switch (sequenceType) {
@@ -32,11 +37,27 @@ function createNewSequence (sequenceType, pipelineType, sequenceArgs) {
         default:
     }
 
-    const generatorObj = generator(sequencer, ...sequenceArgs);
+    let generatorObj;
+    switch (pipeLineType) {
+        case 'ACCUMULATOR':
+            generatorObj = generator(pipeSeq(sequencer, ...sequenceArgs) // 2, 5, 8, 11
+                .pipeline(accumulator) // 2, 7(5+2), 15(7+8), 26(15+11)
+                .invoke());
+            break;
+        case 'IS_EVEN':
+            generatorObj = generator(pipeSeq(sequencer, ...sequenceArgs) // 2, 5, 8, 11
+                .pipeline(isEven) // 2, 7(5+2), 15(7+8), 26(15+11)
+                .invoke());
+            break;
+        default:
+            generatorObj = generator(sequencer, ...sequenceArgs);
+    }
+
     const newSequencer = {
         type: sequenceType,
         generatorObj: generatorObj,
-        uuid: newUuid
+        uuid: newUuid,
+        pipeLineType
     };
     sequences.push(newSequencer);
     return newSequencer;
