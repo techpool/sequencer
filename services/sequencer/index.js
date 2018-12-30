@@ -40,7 +40,7 @@ function createNewSequence (sequenceType, pipeLineType, sequenceArgs) {
     let generatorObj;
     switch (pipeLineType) {
         case 'ACCUMULATOR':
-            generatorObj = generator(pipeSeq(sequencer, sequenceArgs)
+            generatorObj = generator(pipeSeq.apply(this, [sequencer, ...sequenceArgs])
                 .pipeline(accumulator)
                 .invoke());
             break;
@@ -50,7 +50,7 @@ function createNewSequence (sequenceType, pipeLineType, sequenceArgs) {
                 .invoke());
             break;
         default:
-            generatorObj = generator(sequencer, sequenceArgs);
+            generatorObj = generator(sequencer.bind(this, ...sequenceArgs));
     }
 
     const newSequencer = {
